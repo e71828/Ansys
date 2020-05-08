@@ -1,0 +1,135 @@
+!This example problem demonstrates the use of FLUID30 to predict the acoustic standing wave pattern of a typical enclosure representing a room.
+
+!A sound-absorption material is located at the bottom surface of the enclosure and
+! a vibrating structure with a cylindrical surface is located at the top right hand corner of the enclosure.
+
+!The problem determines the acoustic pressure wave pattern when the structure vibrates at an excitation frequency of 80 Hz.
+
+/clear
+/batch,list
+/com, Harmonic Analysis - Room Acoustics
+/nopr
+/PREP7
+/TITLE,Room Acoustic Analysis
+ANTYPE,HARM
+ET,1,30                ! Acoustic elements in contact with walls and vibrating surface
+ET,2,30,,1             ! Acoustic elements in interior (not in contact with walls)
+
+                       ! Material properties
+RHO=1.2041             ! density of air (kg/m**3)
+C0=343.24              ! speed of sound in air (m/sec)
+Z0=RHO*C0              ! Sound impedance
+MP,DENS,1,RHO   
+MP,SONC,1,C0    
+                       ! Set parameters for mesh generation
+XDIV=29                ! Number of divisions along x-axis
+YDIV=19                ! Number of divisions along y-axis
+ZDIV=1                 ! Number of divisions along z-axis
+CDIV=2                 ! Number of divisions along radius
+                       ! Dimensions of the room
+LEN=8.2296
+HGT=6.0960
+RAD=0.27432
+ZL=-0.3048
+                       ! Mesh generation
+K,1
+K,2,LEN
+K,3,LEN,HGT
+K,4,,HGT
+K,5,,,ZL
+K,6,LEN,,ZL
+K,7,LEN,HGT,ZL
+K,8,,HGT,ZL
+L,1,5,1
+L,2,6,1
+L,3,7,1
+L,4,8,1
+CIRC,3,RAD,7,2,90,2
+ADRAG,5,6,,,,, 3
+PIO4=ATAN(1)
+LENC=COS(PIO4)
+LENC=LENC*RAD
+HGTC=HGT-LENC
+LENC=LEN-LENC
+K,15,,HGTC
+K,16,,HGTC,ZL
+K,17,LENC
+K,18,LENC,,ZL
+L,1 ,17,XDIV
+L,10,15,XDIV
+L,11,4 ,XDIV
+L,17,10,YDIV
+L,15, 1,YDIV
+L,2 ,9 ,YDIV
+L,5 ,18,XDIV
+L,13,16,XDIV
+L,14,8 ,XDIV
+L,18,13,YDIV
+L,16,5 ,YDIV
+L,6 ,12,YDIV
+ESIZE,,CDIV
+V,1 ,17,10,15, 5,18,13,16
+V,15,10,11,4 ,16,13,14,8
+V,17,2 ,9 ,10,18,6 ,12,13
+VMESH,ALL
+ALLS
+
+                       ! Coupled elements
+NSEL,S,LOC,X,0.0
+NSEL,A,LOC,Y,0.0
+NSEL,A,LOC,X,LEN
+NSEL,A,LOC,Y,HGT
+LOCAL,11,1,LEN,HGT
+NSEL,A,LOC,X,RAD
+ESLN
+ESEL,INVE
+TYPE,2
+EMODIF,ALL             ! Interior elements are specified as Type=2 & material=3
+ALLS
+                       ! Fluid-Structure Interface (FSI)
+NSEL,S,LOC,X,RAD       ! Select interface (FSI) surface nodes
+ESLN                   ! Select elements attached to interface surface
+SF,ALL,FSI             ! Specify vibrating surface as Fluid-structure interface
+                       ! Boundary conditions
+CSYS,0
+NSEL,S,LOC,X,0.0
+NSEL,A,LOC,Y,0.0
+NSEL,A,LOC,X,LEN
+NSEL,A,LOC,Y,HGT
+D,ALL,UX,,,,,UY,UZ     ! Constrain all displacements to zero at the walls
+CSYS,11
+NSEL,S,LOC,X,RAD       ! Select interface (FSI) surface nodes
+NROTAT,ALL
+D,ALL,UX,.003048       ! Radial vibration amplitude of Vibrating surface
+D,ALL,UY,,,,,UZ
+ALLS
+                       ! Impedance surface (IMPD)
+CSYS,0
+NSEL,S,LOC,X,0.0
+NSEL,A,LOC,X,LEN
+NSEL,A,LOC,Y,0.0
+NSEL,A,LOC,Y,HGT
+SF,ALL,IMPD,Z0/0.04    ! Wall impedance
+HX=LENC/XDIV
+NSEL,S,LOC,Y,0.0
+NSEL,R,LOC,X,13*HX,17*HX	
+SF,ALL,IMPD,Z0/0.7     ! Window impedance
+ALLS
+FINISH
+/SOLU
+                       ! Excitation Frequency for Harmonic Analysis
+HARF,80,80             ! Frequency of excitation = 80 Hz
+SOLVE
+FINISH
+                       ! Plot the Standing Wave Pattern (f = 80 Hz)
+/POST1
+/SHOW,ENCL1,GRPH,1
+SET,1,1                ! plot the real part of pressure response
+EPLOT
+/EDGE,1
+/TITLE,-ROOM ACOUSTICS-  * REAL PART OF PRESSURE
+PLNS,PRES
+SET,1,1,,1             ! plot the imag. part of pressure response
+/TITLE,-ROOM ACOUSTICS-  * IMAG. PART OF PRESSURE
+PLNS,PRES
+FINISH

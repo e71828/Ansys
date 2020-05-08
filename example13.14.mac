@@ -1,0 +1,68 @@
+/batch,list
+/nopr
+/prep7
+et,1,220				! acoustic element
+et,2,281				! shell element
+sectype,2,shell			! define section type as shell
+secdata,0.01,2,0			! shell parameters
+mp,dens,1,1.2			! acoustic mass density
+mp,sonc,1,343			! sound speed
+mp,dens,2,2700			! aluminum mass density
+mp,ex  ,2,70e9			! aluminum elastic moduli
+mp,nuxy,2,.3			! aluminum minor Poisson’s rato
+r,1					! real constant type 1
+r,2					! real constant type 2
+block,,.2,,.2,,.2		! acoustic geometry
+type,1
+real,1
+mat,1
+esize,,10
+vmesh,1				! mesh acoustic domain
+alls
+type,2
+real,2
+mat,2
+secnum,2
+asel,s,loc,x,0.2
+nsla,s,1
+esurf					! create shell element
+alls
+! define constrains
+asel,s,loc,x,.2
+nsla,s,1
+d,all,ux,-0.1
+d,all,uy
+d,all,uz
+asel,s,loc,x,0
+nsla,s,1
+d,all,ux,0,,,,uz
+asel,s,loc,y,0
+nsla,s,1
+d,all,uy,0,,,,uz
+! define fsi interface
+esel,s,type,,1
+nsle,s
+nsel,r,loc,x,0.2
+sf,all,fsi
+alls
+finish
+! perform non-linear static solution
+/solu
+antype,static
+nlgeom,on
+cnvtol,f,1,1e-4
+nsub,1
+morph,on,,,,,,,,,on		! morphing acoustic domain
+rescontrol,define,all,1
+solve
+finish
+! set up linear perturbation
+/solu
+antype,static,restart,,,perturb
+perturb,modal,,,parkeep	! set LP to modal analysis
+solve,elform
+! perform modal solution
+modopt,unsym,5,0.001		! set beginning frequency to 0.001 Hz
+mxpand,5,,,yes
+solve
+finish

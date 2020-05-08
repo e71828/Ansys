@@ -1,0 +1,214 @@
+/clear
+! Permittivities
+ep11 = 370
+ep22 = 635
+ep33 = 370
+
+! Piezoelectric matrix values (C/m^2)  not IEEE
+e11 = 0          $e12 = -5.2          $e13 = 0
+e21 = 0          $e22 = 15.1          $e23 = 0
+e31 = 0          $e32 = -5.2          $e33 = 0
+e41 = 12.7      $e42 = 0              $e43 = 0
+e51 = 0          $e52 = 0              $e53 = 12.7
+e61 = 0          $e62 = 0              $e63 = 0
+
+! Elastic matrix values (N/m^2) not IEEE
+$d11=13.9e10
+$d21=7.43e10      $d22=11.5e10
+$d31=7.78e10      $d32=7.43e10    $d33=13.9e10
+$d41=0              $d42=0            $d43=0         $d44=2.56e10
+$d51=0              $d52=0            $d53=0         $d54=0      $d55=2.56e10
+$d61=0              $d62=0            $d63=0         $d64=0      $d65=0      $d66=3.06e10
+/prep7  
+/view,,0,0,1
+k,1,0,0,0   
+k,2,32,0,0  
+k,3,32,51
+k,4,18,70   
+k,5,0,70
+k,6,0,6 
+k,7,4.4,6
+k,8,4.4,10
+k,9,5,10  
+k,10,5,6  
+k,11,24,6 
+k,12,24,42 
+k,13,19+1,42
+k,14,19+1,21
+k,15,16,21
+k,16,4,21 
+k,17,4,61
+k,18,16,61
+k,19,25,51
+k,20,2.4,61
+k,21,2.4,10  
+k,22,3,10 
+k,23,3,21
+k,24,2.4,70 
+k,9001,19+1,10
+k,10001,19+1,6
+k,14001,24,21
+k,21001,0,10
+kgen,2,all,,,,-35,,,,1  
+kpscale,all,,,0.001,0.001,,,,1  
+/pnum,kp,1
+/pnum,area,1
+gplot
+a,10,10001,9001,9  
+a,22,9001,14,23  
+a,14,14001,12,13
+a,14,14001,11,10001
+a,16,15,18,17   
+a,3,4,24,20,18,19   
+a,5,21001,21,24 
+a,21001,6,7,8   
+a,1,2,3,4,5 
+!PCIRC,0.5, ,-90,90, 
+aovlap,all  
+numcmp,area 
+numcmp,line 
+adele,10  
+adele,6
+/pnum,kp,1
+/pnum,line,1
+/replot
+ldele,28,29
+ldele,37
+kdel,1,2
+gplot
+numcmp,area 
+numcmp,line 
+et,1,PLANE182,3,,1
+et,2,plane13,3,,1   
+mp,ex,1,7.15e10 
+mp,prxy,1,0.34  
+mp,dens,1,2790  
+mp,ex,2,10.4e10 
+mp,prxy,2,0.37  
+mp,dens,2,8600  
+mp,ex,3,21.6e10 
+mp,prxy,3,0.28  
+mp,dens,3,7840  
+mp,dens,4,7500  
+mp,perx,4,ep11  
+mp,pery,4,ep22  
+mp,perz,4,ep33  
+tb,piez,4,,18,0 
+tbdata,1,e11,e12,e13,e21,e22,e23
+tbdata,7,e31,e32,e33,e41,e42,e43
+tbdata,13,e51,e52,e53,e61,e62,e63   
+tb,anel,4,,21,0 
+tbdata,1,d11,d21,d31,d41,d51,d61
+tbdata,7,d22,d32,d42,d52,d62,d33
+tbdata,13,d43,d53,d63,d44,d54,d64   
+tbdata,19,d55,d65,d66   
+mp,dens,5,7500  
+mp,perx,5,ep11  
+mp,pery,5,ep22  
+mp,perz,5,ep33  
+tb,piez,5,,18,0 
+tbdata,1,-e11,-e12,-e13,-e21,-e22,-e23  
+tbdata,7,-e31,-e32,-e33,-e41,-e42,-e43  
+tbdata,13,-e51,-e52,-e53,-e61,-e62,-e63 
+tb,anel,5,,21,0 
+tbdata,1,d11,d21,d31,d41,d51,d61
+tbdata,7,d22,d32,d42,d52,d62,d33
+tbdata,13,d43,d53,d63,d44,d54,d64   
+tbdata,19,d55,d65,d66   
+tblist,all  
+asel,s,,,3  
+type,2  
+mat,4   
+lsla,s
+lsel,s,,,14,16,2 
+lesize,all,,,16
+lsel,s,,,13,15,2
+lesize,all,,,8
+amesh,3 
+alls
+gplot
+
+asel,s,,,5  
+lsla,s  
+type,1  
+mat,3   
+lesize,22,0.0015
+lesize,24,,,3
+AMAP,5,21001,5,24,21
+
+asel,s,,,7
+lsla,s
+type,1  
+mat,1   
+lesize,30,,,2
+lesize,20,,,8
+AMAP,7,24,3,19,20
+
+asel,s,,,1  
+lsla,s  
+type,1  
+mat,2  
+lesize,all,0.0015
+amesh,1 
+asel,s,,,8
+lsla,s
+lesize,29,,,2
+lesize,33,,,1
+lesize,34,0.0015
+lesize,5,0.0025
+AMAP,8,14,23,22,9001
+asel,s,,,4
+lsla,s
+lesize,7,,,3
+AMAP,4,14,14001,11,10001
+asel,s,,,2
+lsla,s
+lesize,10,0.0025
+AMAP,2,14,14001,12,13
+
+asel,s,,,6  
+lsla,s  
+type,1  
+mat,3   
+lesize,31,,,1
+lesize,25,0.0015
+AMAP,6,21001,8,7,6
+/pnum,line,0
+/pnum,kp,0  
+esel,s,type,,2
+nsle,s
+nsel,r,loc,y,-14/1000+0.005,-14/1000+0.010
+nsel,a,loc,y,-14/1000+0.015,-14/1000+0.020
+*repeat,3,,,,0.01,0.01
+nsel,r,loc,x,0.004,0.016
+esln,s,1
+nsle,s 
+emodif,all,mat,5
+
+! nsel,s,loc,y,-14/1000
+! nsel,a,loc,y,-14/1000
+! *repeat,5,,,,0.010,
+! nsel,r,loc,x,0.004,0.016
+! cp,1,volt,all
+! vgrd=ndnext(0) 
+! d,vgrd,volt,0
+
+! nsel,s,loc,y,-14/1000+0.005
+! nsel,a,loc,y,-14/1000+0.005
+! *repeat,4,,,,0.01,
+! nsel,r,loc,x,0.004,0.016
+! cp,2,volt,all
+! velc=ndnext(0) 
+! d,velc,volt,1
+nsel,s,loc,x,0
+d,all,ux,0
+alls
+gplot
+fini
+
+/solu
+antype,2
+modopt,lanb,2,0.5
+mxpand,2
+outres,all,all 
+solve

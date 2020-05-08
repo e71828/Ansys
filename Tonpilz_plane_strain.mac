@@ -1,0 +1,116 @@
+
+/clear
+! Permittivities
+ep11 = 370
+ep22 = 635
+ep33 = 370
+
+! Piezoelectric matrix values (C/m^2)  not IEEE
+e11 = 0          $e12 = -5.2          $e13 = 0
+e21 = 0          $e22 = 15.1          $e23 = 0
+e31 = 0          $e32 = -5.2          $e33 = 0
+e41 = 12.7      $e42 = 0              $e43 = 0
+e51 = 0          $e52 = 0              $e53 = 12.7
+e61 = 0          $e62 = 0              $e63 = 0
+
+! Elastic matrix values (N/m^2) not IEEE
+$d11=13.9e10
+$d21=7.43e10      $d22=11.5e10
+$d31=7.78e10      $d32=7.43e10    $d33=13.9e10
+$d41=0              $d42=0            $d43=0         $d44=2.56e10
+$d51=0              $d52=0            $d53=0         $d54=0      $d55=2.56e10
+$d61=0              $d62=0            $d63=0         $d64=0      $d65=0      $d66=3.06e10
+
+/prep7  
+!et,1,plane42   
+!et,2,plane13   
+!et,3,fluid29   
+!et,4,fluid29,,1,0  
+!et,5,fluid129  
+!r,5,0.5,0,0
+mp,ex,1,7.15e10 
+mp,prxy,1,0.34  
+mp,dens,1,2790  
+mp,ex,2,10.4e10 
+mp,prxy,2,0.37  
+mp,dens,2,8600  
+mp,ex,3,21.6e10 
+mp,prxy,3,0.28  
+mp,dens,3,7840  
+mp,dens,4,7840  
+!tb,DPER,4,,3,0                   ! Permittivity at constant strain by 223 226 227  
+!tbdata,1,ep11,ep22,ep33
+mp,perx,4,ep11  
+mp,pery,4,ep22  
+mp,perz,4,ep33  
+tb,piez,4,,18,0              !the piezoelectric stress matrix   
+tbdata,1,e11,e12,e13,e21,e22,e23
+tbdata,7,e31,e32,e33,e41,e42,e43
+tbdata,13,e51,e52,e53,e61,e62,e63
+  
+tb,anel,4,,21,0 
+tbdata,1,d11,d21,d31,d41,d51,d61
+tbdata,7,d22,d32,d42,d52,d62,d33
+tbdata,13,d43,d53,d63,d44,d54,d64   
+tbdata,19,d55,d65,d66   
+!tblist,all 
+*SET,width,Arg1
+*SET,height,Arg2
+*SET,depth,0
+blc4,,,width,height,depth   
+et,10,plane13,7,,0                  
+!et,10,solid226,1001                        
+type,10 
+mat,4   
+lsel,all
+lsel,s,loc,y,0 
+lsel,a,loc,y,height 
+lesize,all,0.01
+!lesize,all,,,10
+lsel,s,loc,x,0
+lsel,a,loc,x,width
+lesize,all,0.005
+!lesize,all,,,2
+alls
+amesh,all   
+
+nsel,s,loc,y,0
+cp,1,volt,all   
+cp,2,uy,all
+*SET,vele,ndnext(0) 
+d,vele,volt,5  
+nsel,s,loc,y,height  
+cp,3,volt,all
+cp,4,uy,all   
+*SET,vgrd,ndnext(0) 
+d,vgrd,volt,0             !!5V  
+nsel,s,loc,x,width
+! d,all,ux,0
+cp,5,ux,all
+nsel,s,loc,x,0
+! d,all,ux,0
+cp,6,ux,all
+alls
+! FINISH  
+! /SOL
+! antype,2
+! modopt,lanb,60,40000,89000
+! mxpand,60 
+! solve   
+! fini
+! /post1  
+! set,list
+
+fini
+/solu
+antype,harm                    ! harmonic analysis
+harfrq,2600,56000                   ! frequency range
+nsubs,1000                       ! number of substeps
+outres,all,all                 ! write all solution items to the result file
+kbc,1                          ! stepped load, i.e., the same values are used for all substeps
+solve
+fini
+/post26
+numvar,200
+rfor,2,vele,amps             ! reaction current I
+prod,3,2,,,C_ANSYS,,,1/5      ! Y_ansys = I/V

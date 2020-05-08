@@ -1,0 +1,99 @@
+/clear
+/BATCH,LIST
+/VERIFY,EV129-1S
+/PREP7
+/TITLE,AMA,EV129-1S,FLUID129,HARMONIC ANALYSIS
+ET,1,PLANE182,2                                 ! structural element
+ET,2,FLUID29                                    ! acoustic fluid element with ux & uy
+et,3,129                                        ! acoustic infinite line element
+r,3,0.5207,0,0
+ET,4,FLUID29,,1,0                               ! acoustic fluid element without ux & uy
+                                                ! material properties
+MP,EX,1,2.068e11
+MP,DENS,1,7929
+MP,NUXY,1,0
+MP,DENS,2,1030
+MP,SONC,2,1460
+                                                ! create inner and outer quarter circles
+CYL4,0,0,0.254,0,0.26035,90    
+CYL4,0,0,0.26035,0,0.5207,90
+                                                ! select, assign attribute to and mesh area 1
+ASEL,S,AREA,,1
+AATT,1,1,1,0
+LESIZE,1,,,16,1
+LESIZE,3,,,16,1
+LESIZE,2,,,1,1
+LESIZE,4,,,1,1
+MSHKEY,1
+MSHAPE,0,2D                                     ! mapped quad mesh
+AMESH,1
+                                                ! select, assign attribute to and mesh area 2
+ASEL,S,AREA,,2
+AATT,2,1,2,0
+LESIZE,5,,,16,1
+LESIZE,7,,,16,1
+LESIZE,6,,,5
+LESIZE,8,,,5
+MSHKEY,0
+MSHAPE,0,2D                                     ! mapped quad mesh
+AMESH,2
+                                                ! reflect quarter circle into semicircle about x-axis
+nsym,x,1000,all                                 ! offset node number by 1000
+esym,,1000,all
+                                                ! reflect semicircle into full circle about y-axis
+nsym,y,2000,all                                 ! offset node number by 2000
+esym,,2000,all
+NUMMRG,ALL                                      ! merge all quantities
+                                                ! modify outer 2 layers of el29 into type 4
+esel,s,type,,1
+nsle,s
+esln,s,0
+nsle,s
+esel,inve
+nsle,s
+emodif,all,type,4
+esel,all
+nsel,all
+                                                ! define el129 line element
+csys,1
+nsel,s,loc,x,0.5207
+type,3
+real,3
+mat,2
+esurf
+esel,all
+nsel,all
+                                                ! flag interface as fluid-structure interface
+nsel,s,loc,x,0.26035
+esel,s,type,,2
+sf,all,fsi
+nsel,all
+esel,all
+FINISH
+                                                ! enter solution module
+/SOLU
+ANTYPE,harmic                                   ! select harmonic analysis
+hropt,full
+f,19,fx,1000.
+f,1019,fx,-1000.
+harfrq,34.,38.
+nsubst,100
+kbc,1
+SOLVE
+FINISH
+                                                ! postprocess
+/post26
+plcplx,0
+nsol,2,1,u,x,d1ux
+store
+conjug,3,2
+prod,4,2,3
+sqrt,5,4
+*get,uxmx,vari,5,extrem,tmax
+/COM -------------------------------------------------------------
+/COM                     Expected Result:
+/COM
+/COM The following "uxmx" should equal 34.52 Hz.
+/COM -------------------------------------------------------------
+*status,uxmx
+finish

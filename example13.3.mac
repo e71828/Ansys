@@ -1,0 +1,76 @@
+!This example problem demonstrates the use of FLUID220 to predict the resonant frequencies in a pipe filled with the ideal gas.
+
+!The pipe dimensions are 0.02 x 0.05 x 1m3. The material properties are defined at the reference temperature TREF = 288.15 K.
+
+!The temperatures are set to 2000 K and 400 K at z = 0 and z = 1 m, respectively.
+
+!The temperature varies linearly from one end to the other.
+
+!A constant static pressure is used.
+
+/clear
+/batch,list
+/title,Ideal gas with linear temperature variation
+/nopr
+/prep7
+                                 ! define element and material
+et,1,220,,1
+rho=1.225                        ! density
+c=340                            ! sonic speed
+p0=101325                        ! constant static pressure
+mp,sonc,1,c			
+mp,dens,1,rho
+                                 ! define the geometry
+a=0.02
+b=0.05
+c=1
+block,0,a,0,b,0,c
+                                 ! create mesh
+h=0.01
+mshape,0,3d			
+esize,h
+type,1
+mat,1
+vmesh,all
+alls
+tref,288.15                      ! reference T = 288.15 K
+                                 ! linear temperature variation: T=2000 (z=0); T=400 (z=c)
+*get,ndmax,NODE,0,COUNT
+node=0
+*do,i,1,ndmax
+node=ndnext(node)
+zi=nz(node)
+con= (-1600/c)*zi+2000
+nsel,s,loc,z,zi
+bf,all,temp,con
+nsel,all
+*enddo
+alls
+nsel,all
+                                 ! constant static pressure p0=101325 Pa
+bf,all,spre,p0
+                                 ! define the boundary condition
+nsel,s,loc,z,c
+d,all,pres,0
+alls
+fini
+                                 ! perform a solution
+/solu
+antype,modal
+modopt,lanb,6,50,2000            ! six modes between 50 and 2000 Hz
+mxpand,6
+solve
+fini
+
+/post1
+*dim,result,array,6
+*do,i,1,6
+set,1,i
+*get,freq,active,,set,freq       ! get resonant frequency
+result(i) = freq
+*enddo
+/com,
+/com,              ***** Resonant Frequencies (Hz) *****
+*vwrite,result(1)
+(18X,F15.4)
+finish

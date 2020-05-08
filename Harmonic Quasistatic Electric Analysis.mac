@@ -1,0 +1,108 @@
+/clear
+/title, Harmonic response of a lossy capacitor
+/com, 
+/com,  Problem parameters:
+a=9.e-2                        ! radius, m
+d=0.1e-2                       ! thickness, m
+epsr=1143                      ! relative permittivity
+tand=0.0!105                    ! loss tangent
+Vo=50                          ! voltage amplitude, V
+f1=0                           ! begin frequency, Hz
+f2=1.e6                        ! end frequency, Hz
+eps0=8.854e-12                 ! free space permittivity, F/m
+Pi=acos(-1)
+C=epsr*eps0*Pi*a**2/d          ! capacitance, F
+P2d=Pi*f2*Vo**2*C*tand         ! power dissipation at freq. f2, watt
+
+/nopr
+/PREP7
+et,1,PLANE230,,,1              ! axisymmetric electric element
+emunit,epzro,eps0              ! specify free-space permittivity
+mp,perx,1,epsr                 ! electric material properties
+mp,lsst,1,tand
+
+rect,,a,,d                     ! model and mesh
+esize,d/2
+amesh,1
+
+! Boundary conditions and loads
+nsel,s,loc,y,0
+cp,1,volt,all                  ! define bottom electrode
+*get,n_grd,node,0,num,min      ! get master node on bottom electrode
+nsel,s,loc,y,d
+cp,2,volt,all                  ! top electrode
+*get,n_load,node,0,num,min     ! get master node on top electrode
+nsel,all
+d,n_grd,volt,0                 ! ground bottom electrode
+d,n_load,volt,Vo               ! apply voltage load to top electrode
+fini
+
+/solu
+antype,harm                    ! harmonic analysis
+harfrq,f1,f2                   ! frequency range
+nsubs,10                       ! number of substeps
+outres,all,all                 ! write all solution items to the result file
+kbc,1                          ! stepped load
+solve
+fini
+
+/post1                         
+/com,Calculate power dissipation at frequency = %f2%, Hz
+set,last                       ! read last data set
+etab,jh,jheat                  ! fill etable with Joule heat rates per unit volume
+etab,vol,volu                  ! fill etable with element volumes
+smult,dpower,jh,vol            ! fill etable with element Joule heat rates
+ssum                           ! sum element Joule heat rates
+/com,Expected power dissipation = %P2d%, watt
+fini
+
+/post26
+rfor,2,n_load,amps             ! reaction current I
+prod,3,2,,,Y_ANSYS,,,1/Vo      ! Y_ansys = I/V
+prod,4,1,,,,,,2*Pi*C           ! 2*Pi*f*C 
+cfact,tand,,,1
+add,5,4,4,,Y_TARGET            ! Y_target = 2*Pi*f*C*(tand+j)
+prcplx,1
+prvar,Y_ANSYS,Y_TARGET
+
+
+
+fini
+
+/com,
+/com, *** Perform same frequency sweep using electrostatic elements
+/com,
+
+/PREP7
+et,1,PLANE121,,,1              ! axisymmetric electrostatic element           
+fini
+
+/solu
+antype,harm                    ! harmonic analysis
+harfrq,f1,f2                   ! frequency range
+nsubs,10                       ! number of substeps
+outres,all,all                 ! write all solution items to the result file
+kbc,1                          ! stepped load
+solve
+fini
+
+/post1                         
+/com,Calculate power dissipation at frequency = %f2%, Hz
+set,last                       ! read last dataset
+etab,jh,jheat                  ! fill etable with Joule heat rates per unit volume
+etab,vol,volu                  ! fill etable with element volumes
+smult,dpower,jh,vol            ! fill etable with element Joule heat rates
+ssum                           ! summ up element Joule heat rates
+/com,Expected power dissipation = %P2d%, watt
+fini
+
+/post26
+rfor,2,n_load,chrg             ! reaction charge Q
+cfact,0,2*Pi
+prod,3,1,2,,Y_ANSYS,,,,1/Vo    ! Y_ansys = j*2*Pi*Q/Vo
+prod,4,1,,,,,,2*Pi*C           ! 2*Pi*f*C 
+cfact,tand,,,1
+add,5,4,4,,Y_TARGET            ! Y_target = 2*Pi*f*C*(tand+j)
+prcplx,1
+prvar,Y_ANSYS,Y_TARGET
+fini

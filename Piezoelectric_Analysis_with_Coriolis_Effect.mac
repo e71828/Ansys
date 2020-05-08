@@ -1,0 +1,166 @@
+/clear
+/title, Coriolis Effect in a Vibrating Quartz Tuning Fork
+/com  uMKS system of units
+/nopr
+
+pi  = 4*atan(1)
+/VIEW,1,1,1,1 
+/TRIAD,lbot
+
+/PREP7
+! == Material parameters
+! -- Elastic coefficients, MPa
+c11      = 86.74e3    
+c12      = 6.99e3    
+c13      = 11.91e3    
+c14      = 17.91e3    
+c33      = 107.2e3
+c44      = 57.94e3
+tb,ANEL,1
+tbdata, 1,  c11, c12, c13,    0, c14,    0
+tbdata, 7,       c11, c13,    0,-c14,    0
+tbdata,12,            c33,    0,   0,    0
+tbdata,16,          (c11-c12)/2,   0,  c14   
+tbdata,19,                       c44,    0   
+tbdata,21,                             c44
+
+! -- Piezoelectric coefficients, pC/um2
+e11 = 0.171   
+e14 =-0.0406   
+tb,PIEZ,1
+tbdata, 1,  e11,    0,   0
+tbdata, 4, -e11,    0,   0
+tbdata, 7,    0,    0,   0
+tbdata,10,    0, -e11,   0     
+tbdata,13,  e14,    0,   0     
+tbdata,16,    0, -e14,   0
+
+! -- Dielectric constants 
+emunit,EPZRO,8.854e-6             ! pF/um
+mp,PERx,1, 4.43                  
+mp,PERy,1, 4.43
+mp,PERz,1, 4.63
+
+! -- Density, kg/um3
+mp,DENS,1,2649e-18        
+
+! == Dimensions, um
+
+thick    =  350                   ! thickness of wafer
+leng_TF  = 4800                   ! length of tuning fork
+leng_tin = 3200                   ! length of tines
+dist_t   =  350                   ! distance between tines
+width_t  =  450                   ! width of tines
+x_t_in   = dist_t/2               ! distance to outer part of tines
+x_t_out  = dist_t/2 + width_t     ! distance to inner part of tines
+
+! == FE Model
+
+et,1,SOLID226,1001                ! piezoelectric 20-node brick
+
+! -- Keypoints
+k, 1, 0,       0                , -thick/2
+k, 2, 0,       leng_TF-leng_tin , -thick/2
+k, 3, x_t_in,  0                , -thick/2
+k, 4, x_t_in,  leng_TF-leng_tin , -thick/2
+k, 5, x_t_in,  leng_TF          , -thick/2
+k, 6, x_t_out, 0                , -thick/2
+k, 7, x_t_out, leng_TF-leng_tin , -thick/2
+k, 8, x_t_out, leng_TF          , -thick/2
+
+! -- Areas
+a,1,3,4,2   
+a,3,6,7,4
+a,4,7,8,5
+
+! -- Lines
+lesize, 5,,,  4,                  ! X, tines
+*repeat,3,2           
+lesize, 1,,,  2,                  ! X, between tines
+lesize, 3,,,  2,    
+lesize, 8,,, 14,  3               ! Y, tines
+lesize,10,,, 14, 1/3 
+lesize, 2,,, 8, -2                ! Y, base
+*repeat,3,2             
+*get,n_lin,LINE,,count            ! number of lines
+lgen,2,1, n_lin, 1,,, thick,20    ! generate top layer lines 
+l,1,21, 4,                        ! thickness direction
+*repeat,8,1,1                 
+
+lsymm,X,all,,,100                 ! generate left half of tuning fork
+
+! -- Volumes
+v,  1,  3,  4,  2,  21, 23, 24, 22
+v,  3,  6,  7,  4,  23, 26, 27, 24 
+v,  4,  7,  8,  5,  24, 27, 28, 25
+v,101,103,104,102, 121,123,124,122
+v,103,106,107,104, 123,126,127,124 
+v,104,107,108,105, 124,127,128,125
+vplot
+nummrg,kp
+
+! -- Mesh
+type,1
+vmesh,all
+
+! == Define electrodes 
+delta=20                         ! separation between electrodes and edge
+
+! -- Loaded electrode
+nsel,s,loc,x, x_t_in+delta, x_t_out-delta     ! top/bottom right tine
+nsel,u,loc,z, -thick/2+1, thick/2-1
+nsel,a,loc,x, -x_t_out-1, -x_t_out+1          ! sides of left tine
+nsel,a,loc,x, -x_t_in-1,  -x_t_in+1
+nsel,r,loc,y, leng_TF-leng_tin-1, leng_TF-leng_tin*0.45  ! select tine-nodes
+cp,1,volt,all
+n_load=ndnext(0)                 ! get master node on loaded electrode
+
+! -- Ground electrode
+nsel,s,loc,x, -x_t_out+delta, -x_t_in-delta   ! top/bottom left tine
+nsel,u,loc,z, -thick/2+1, thick/2-1
+nsel,a,loc,x, x_t_out-1, x_t_out+1            ! sides of right tine
+nsel,a,loc,x, x_t_in-1,  x_t_in+1
+nsel,r,loc,y, leng_TF-leng_tin-1, leng_TF-leng_tin*0.45  ! select tine-nodes
+cp,2,volt,all
+n_ground=ndnext(0)               ! get master node on ground electrode
+nsel,all
+
+! == Solution
+/SOLU
+! -- Structural constraints
+nsel,s,loc,y,0
+d,all,ux,,,,,uy,uz                                                                       
+nsel,all        
+
+! -- Ground electrode
+d,n_ground,volt,0                ! ground 
+! -- Loaded electrode
+d,n_load,volt,1                  ! apply 1 Volt
+                                                                    
+! -- Add Coriolis effect 
+coriolis,on,,,off                ! Coriolis effect in a rotating reference frame
+omega,,1.e4                      ! rotational velocity about the Y axis, rad/s                                                               
+fini
+
+! == Modal analysis
+/SOLU
+antype,modal
+modopt,QRDAMP,4                  ! use damped eigensolver
+solve                   
+fini
+
+! ==Harmonic analysis
+/SOLU
+antype,harm
+dmprat,0.02                      ! specify structural damping ratio of 2%
+harfrq,,32768
+outres,all,all
+solve
+fini
+
+/POST1
+set,1,1
+/dscale,1,6
+plns,uz
+anharm                           ! animate complex displacements
+fini

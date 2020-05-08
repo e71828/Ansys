@@ -1,0 +1,187 @@
+/clear
+/title, Piezoelectric Perfectly Matched Layers 
+
+/nopr
+pi=acos(-1)
+
+prd=4                ! Electrode period (um)
+w_elctrd=1           ! Electrode width (um)
+t_elctrd=0.2         ! Electrode height (um)
+n_elctrd=2           ! Number of electrodes (um)
+
+t_sbstrt=4           ! Substrate thickness (um)
+d_PML=2              ! PML thickness (um)
+d=t_elctrd           ! Model depth
+esz=prd/20           ! Element size (um)
+
+E_elctrd=70e9        ! Electrode elastic modulus (N/m^2)
+nu_elctrd=0.35       ! Electrode Poisson's ratio
+dnsty_elctrd=2700    ! Electrode density (kg/m^3)
+
+frqncy=0.921e9       ! Operating frequency
+
+rho = 7489           ! Piezoelectric substrate density (kg/m^3)
+
+! Permittivities
+ep11 = 402.078
+ep22 = 402.078
+ep33 = 329.794
+
+! Piezoelectric matrix values (C/m^2)
+e11 = 0         $e12 = 0         $e13 = -4.1
+e21 = 0         $e22 = 0         $e23 = -4.1
+e31 = 0         $e32 = 0         $e33 = 14.1
+e41 = 0         $e42 = 0         $e43 = 0
+e51 = 0         $e52 = 10.5      $e53 = 0
+e61 = 10.5      $e62 = 0         $e63 = 0
+
+! Elastic matrix values (N/m^2)
+$d11=13.2e10
+$d21=7.1e10 $d22=13.2e10
+$d31=7.3e10 $d32=7.3e10 $d33=11.5e10
+$d41=0      $d42=0      $d43=0      $d44=3.0e10
+$d51=0      $d52=0      $d53=0      $d54=0      $d55=2.6e10
+$d61=0      $d62=0      $d63=0      $d64=0      $d65=0      $d66=2.6e10
+
+/prep7
+
+! Geometry
+     
+wpcsys,-1,0
+wpoffs,-prd/4
+block,-w_elctrd/2,w_elctrd/2,,t_elctrd,,d
+vgen,2,all,,,prd/2
+
+wpcsys,-1,0
+block,-prd/2,prd/2,,-t_sbstrt,,d
+vglue,all
+vsel,s,loc,y,0,t_elctrd
+vatt,1,1,1
+
+vsel,inve
+vatt,2,2,2,11
+allsel
+cm,keep_v,volu
+
+vsel,none
+block,-(prd/2+d_PML),(prd/2+d_PML),,-t_sbstrt-d_PML,,d
+cm,scrap_v,volu
+
+alls
+cmsel,all
+vsbv,scrap_v,keep_v,,dele,keep
+cmsel,u,keep_v
+vatt,3,3,3,11
+allsel
+vplot
+
+wpcsys,-1,0         ! Local coordinate system 11 (z aligned with global x)
+wprota,,,90
+cswpla,11
+csys
+
+! Electrode
+
+et,1,SOLID186            ! 3-D structural solid element type
+mp,ex,1,E_elctrd
+mp,nuxy,1,nu_elctrd
+mp,dens,1,dnsty_elctrd
+
+! Piezoelectric substrate 
+
+et,2,SOLID226,1001       ! 3-D piezoelectric element type
+mp,perx,2,ep11
+mp,pery,2,ep22
+mp,perz,2,ep33
+
+tb,piez,2,,18
+tbdata,1,e11,e12,e13,e21,e22,e23
+tbdata,7,e31,e32,e33,e41,e42,e43
+tbdata,13,e51,e52,e53,e61,e62,e63
+
+tb,anel,2,,21,0
+tbdata,1,d11,d21,d31,d41,d51,d61
+tbdata,7,d22,d32,d42,d52,d62,d33
+tbdata,13,d43,d53,d63,d44,d54,d64
+tbdata,19,d55,d65,d66
+
+mp,dens,2,rho
+
+! Piezoelectric PML
+
+et,3,SOLID226,1001   ! 3-D piezoelectric element type
+keyopt,3,15,1        ! PML option for SOLID226
+psys                 ! PML element coordinate system defaults to global Cartesian 
+mp,perx,3,ep11
+mp,pery,3,ep22
+mp,perz,3,ep33
+
+tb,piez,3,,18
+tbdata,1,e11,e12,e13,e21,e22,e23
+tbdata,7,e31,e32,e33,e41,e42,e43
+tbdata,13,e51,e52,e53,e61,e62,e63
+
+tb,anel,3,,21,0
+tbdata,1,d11,d21,d31,d41,d51,d61
+tbdata,7,d22,d32,d42,d52,d62,d33
+tbdata,13,d43,d53,d63,d44,d54,d64
+tbdata,19,d55,d65,d66
+
+mp,dens,3,rho
+
+! Meshing
+
+esize,esz
+vsel,s,mat,,1,2
+vsweep,all
+vsel,s,mat,,3
+psys,0
+vsweep,all
+
+! Electrode voltage excitation
+
+vsel,s,mat,,1
+nslv,s,1
+nsel,r,loc,x,0,prd
+vsel,s,mat,,2
+nslv,r,1
+d,all,volt,0       ! Ground electrode
+allsel
+
+vsel,s,mat,,1
+nslv,s,1
+nsel,r,loc,x,0,-prd
+vsel,s,mat,,2
+nslv,r,1
+d,all,volt,1       ! Voltage load
+allsel
+
+vlscale,all,,,1e-6,1e-6,1e-6,,,1 
+finish
+
+! Harmonic analysis
+
+/solu
+pmlopt,,,1.e-4,1.e-4,1.e-4,1.e-4,1.e-4,1.e-4,yes  ! Set piezoelectric PML normal reflection coefficient
+antype,harm
+harfrq,frqncy
+solve
+finish
+
+! Postprocessing
+
+/post1
+set,1,1,,ampl
+esel,s,type,,2
+nsle,s,all
+nsel,r,loc,x,0,-1/2
+nsel,r,loc,y,0
+nsel,r,loc,z,0
+prnsol,u
+prnsol,volt
+allsel
+esel,s,type,,1
+esel,a,type,,2
+plnsol,u,sum
+plnsol,volt
+finish

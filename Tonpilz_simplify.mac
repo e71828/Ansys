@@ -1,0 +1,150 @@
+/clear
+! Permittivities
+ep11 = 370
+ep22 = 635
+ep33 = 370
+eps=0.0001
+arg3 = 10
+
+! Piezoelectric matrix values (C/m^2)  not IEEE
+e11 = 0          $e12 = -5.2          $e13 = 0
+e21 = 0          $e22 = 15.1          $e23 = 0
+e31 = 0          $e32 = -5.2          $e33 = 0
+e41 = 12.7      $e42 = 0              $e43 = 0
+e51 = 0          $e52 = 0              $e53 = 12.7
+e61 = 0          $e62 = 0              $e63 = 0
+! Elastic matrix values (N/m^2) not IEEE
+$d11=13.9e10
+$d21=7.43e10      $d22=11.5e10
+$d31=7.78e10      $d32=7.43e10    $d33=13.9e10
+$d41=0              $d42=0            $d43=0         $d44=2.56e10
+$d51=0              $d52=0            $d53=0         $d54=0      $d55=2.56e10
+$d61=0              $d62=0            $d63=0         $d64=0      $d65=0      $d66=3.06e10
+/prep7  
+R=0.015/2  $h=0.045  $l1=35.8e-3  $l2=h-l1  $lb=36e-3  $lf=40e-3 $db=0.06
+df=0.03  $ dft =0.080
+k,1,0,-l1-lb   $k,2,0,-l1  $k,3,  $k,4,0,l2  $k,5,0,l2+lf
+kgen,2,1,5,,R,,,110
+k,15,dft/2,l2+lf   $k,14,df/2,l2  $k,12,db/2,-l1   $k,11,db/2,-l1-lb
+a,1,2,112,111 $ a,2,4,114,112 $ a,4,5,115,114
+a,115,15,14,114   $a,112,12,11,111
+aglue,all
+et,1,PLANE182,3,,1
+et,2,plane13,7,,1 
+mp,ex,1,7.15e10 
+mp,prxy,1,0.34  
+mp,dens,1,2790 
+ 
+! mp,ex,3,21.6e10 
+! mp,prxy,3,0.28  
+! mp,dens,3,7840 
+mp,ex,3,10.4e10 
+mp,prxy,3,0.37  
+mp,dens,3,8600
+ 
+mp,dens,4,7500  
+mp,perx,4,ep11  
+mp,pery,4,ep22  
+mp,perz,4,ep33  
+tb,piez,4,,18,0 
+tbdata,1,e11,e12,e13,e21,e22,e23
+tbdata,7,e31,e32,e33,e41,e42,e43
+tbdata,13,e51,e52,e53,e61,e62,e63   
+tb,anel,4,,21,0 
+tbdata,1,d11,d21,d31,d41,d51,d61
+tbdata,7,d22,d32,d42,d52,d62,d33
+tbdata,13,d43,d53,d63,d44,d54,d64   
+tbdata,19,d55,d65,d66   
+mp,dens,5,7500  
+mp,perx,5,ep11  
+mp,pery,5,ep22  
+mp,perz,5,ep33  
+tb,piez,5,,18,0 
+tbdata,1,-e11,-e12,-e13,-e21,-e22,-e23  
+tbdata,7,-e31,-e32,-e33,-e41,-e42,-e43  
+tbdata,13,-e51,-e52,-e53,-e61,-e62,-e63 
+tb,anel,5,,21,0 
+tbdata,1,d11,d21,d31,d41,d51,d61
+tbdata,7,d22,d32,d42,d52,d62,d33
+tbdata,13,d43,d53,d63,d44,d54,d64   
+tbdata,19,d55,d65,d66  
+
+asel,s,loc,y,-l1,l2
+type,2         $mat,4
+lsel,s,loc,y,-l1
+lsel,a,loc,y,l2
+lesize,all,,,15
+lsel,s,loc,y,-l1,l2 $lsel,u,loc,y,-l1  $lsel,u,loc,y,l2
+lesize,all,,,arg3*2
+amap,2,2,4,114,112
+
+esel,s,type,,2
+nsle,s
+nsel,r,loc,y,-l1,-l1+h/arg3
+nsel,a,loc,y,-l1+h/arg3*2,-l1+3*h/arg3
+*repeat,14,,,,h/arg3*2,h/arg3*2
+esln,s,1
+nsle,s 
+emodif,all,mat,5
+
+asel,s,loc,y,-l1-lb,-l1
+type,1         $mat,3
+lsel,s,loc,y,-l1-lb,-l1           $lsel,r,loc,x,0
+lesize,all,,,15
+lsel,s,loc,y,-l1       $ lsel,r,loc,x,R,db/2
+lesize,all,0.0005,,,,1
+amap,1,1,2,111,112
+amap,5,111,11,12,112
+
+asel,s,loc,y,l2,l2+lf
+type,1         $mat,1
+lsel,s,loc,y,l2,l2+lf        $lsel,r,loc,x,0
+lesize,all,,,20
+lsel,s,loc,y,l2       $ lsel,u,loc,x,0,R
+lesize,all,0.0005,,,,1
+amap,3,5,115,114,4
+amap,4,15,14,115,114
+
+nsel,s,loc,y,-l1
+nsel,a,loc,y,-l1
+*repeat,arg3/2+1,,,,h/arg3*2,
+cp,1,volt,all
+vgrd=ndnext(0) 
+d,vgrd,volt,0
+
+nsel,s,loc,y,-l1+h/arg3
+nsel,a,loc,y,-l1+h/arg3
+*repeat,arg3/2,,,,h/arg3*2,
+cp,2,volt,all
+velc=ndnext(0) 
+d,velc,volt,1
+
+
+nsel,s,loc,x,R  $ nsel,r,loc,y,-l1,l2
+cp,5,ux,all
+nsel,s,loc,x,0  $ nsel,r,loc,y,-l1,l2
+d,all,ux,0
+alls
+/solu
+antype,2
+modopt,lanb,20,0.5
+mxpand,20
+outres,all,all 
+solve
+fini
+/post1
+set,list
+
+
+! /solu
+! antype,harm                    ! harmonic analysis
+! harfrq,2600,52000                 ! frequency range
+! nsubs,1000                      ! number of substeps
+! outres,all,all                 ! write all solution items to the result file
+! kbc,1                          ! stepped load, i.e., the same values are used for all substeps
+! solve
+! fini
+! /post26
+! numvar,200
+! rfor,2,vele,amps             ! reaction current I
+! prod,3,2,,,C_ANSYS,,,1/5      ! Y_ansys = I/V

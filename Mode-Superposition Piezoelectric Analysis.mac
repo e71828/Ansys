@@ -1,0 +1,140 @@
+/clear
+/title, MSUP Harmonic Analysis of a Piezoelectric Fan
+/PREP7
+!
+!   - Geometry
+!
+L=100e-3                        ! Length, m
+H=0.5e-3                        ! One-layer thickness, m
+!
+!   - Loading
+!
+V=100                           ! Electrode voltage, Volt
+!
+!   - Material properties for PVDF 
+!
+E1=2.0e9                        ! Young's modulus, N/m^2 
+NU12=0.29                       ! Poisson's ratio
+G12=0.775e9                     ! Shear modulus, N/m^2 
+d31=2.2e-11                     ! Piezoelectric strain coefficients, C/N
+d32=0.3e-11
+d33=-3.0e-11
+ept33=12                        ! Relative permittivity at constant stress 
+
+!
+! Finite element model of the piezoelectric bimorph beam
+!
+local,11                        ! Coord. system for lower layer: polar axis +Y 
+local,12,,,,,180                ! Coord. system for upper layer: polar axis -Y
+csys,11                         ! Activate coord. system 11
+rect,0,L,-H,0                   ! Create area for lower layer
+rect,0,L, 0,H                   ! Create area for upper layer
+aglue,all                       ! Glue layers
+esize,H                         ! Specify the element length
+
+et,1,PLANE223,1001,,0           ! 2-D piezoelectric element, plane stress
+
+tb,ANEL,1,,,1                  ! Elastic compliance matrix
+tbda,1,1/E1,-NU12/E1,-NU12/E1
+tbda,7,1/E1,-NU12/E1
+tbda,12,1/E1
+tbda,16,1/G12
+
+tb,PIEZ,1,,,1                   ! Piezoelectric strain matrix
+tbda,2,d31
+tbda,5,d33
+tbda,8,d32
+
+tb,DPER,1,,,1                   ! Permittivity at constant stress
+tbdata,1,ept33,ept33
+
+mp,dens,1,1000
+
+type,1 $ esys,11
+amesh,1                         ! Generate mesh within the lower layer
+type,1 $ esys,12             
+amesh,3                         ! Generate mesh within the upper layer
+
+!
+! Finite element of the "fan" from L/4 to L
+!
+et,2,182
+mp,ex,2,.1e12
+mp,dens,2,1000
+mp,prxy,2,0.3
+csys,0
+nsel,s,loc,x,L/4,L
+esln
+emod,all,type,2
+emod,all,mat,2
+allsel
+
+!
+! Boundary conditions
+!
+nsel,s,loc,y,-H
+nsel,r,loc,x,0,L/4
+d,all,volt,0
+allsel
+
+nsel,s,loc,x,0
+d,all,ux,0
+d,all,uy,0
+nsel,all
+finish
+
+!
+! Modal Analysis
+!
+/solu
+antype,modal
+modopt,lanb,12
+mxpand,12
+
+modcont,,on            ! Activate the enforced motion calculation
+nsel,s,loc,y,H
+nsel,r,loc,x,0,L/4
+d,all,volt,1              ! Create the enforced motion load vector #1
+allsel
+
+solve
+finish
+
+!
+! MSUP Harmonic Analysis
+!
+/solu
+antype,harm
+hropt,msup
+harfrq,10,450
+nsub,500
+kbc,1
+dmprat,0.02
+dval,1,u,100.0         ! Use the enforced motion load vector #1 - scaling = 100.0
+solve
+finish
+
+!
+! Expansion Pass
+!
+/solu
+expass,on
+numexp,all
+solve
+finish
+
+!
+! Postprocessing
+!
+/post1
+set,1,20
+plnsol,volt
+plnsol,u,y
+anharm
+finish
+/post26
+nsol,3,node(L,0,0),u,y,uytip
+plcplx,0
+/gropt,logy,1
+plvar,3
+finish

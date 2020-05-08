@@ -1,0 +1,145 @@
+/clear
+/title, Static Analysis of a Piezoelectric Bimorph Beam
+/nopr
+/com,
+/PREP7
+!
+!  Define problem parameters
+!
+!   - Geometry
+!
+L=100e-3                        ! Length, m
+H=0.5e-3                        ! One-layer thickness, m
+!
+!   - Loading
+!
+V=100                           ! Electrode voltage, Volt
+Uy=10.e-3                       ! Tip displacement, m
+!
+!   - Material properties for PVDF 
+!
+E1=2.0e9                        ! Young's modulus, N/m^2 
+NU12=0.29                       ! Poisson's ratio
+G12=0.775e9                     ! Shear modulus, N/m^2 
+d31=2.2e-11                     ! Piezoelectric strain coefficients, C/N
+d32=0.3e-11
+d33=-3.0e-11
+ept33=12                        ! Relative permittivity at constant stress 
+!
+! Finite element model of the piezoelectric bimorph beam
+!
+local,11                        ! Coord. system for lower layer: polar axis +Y 
+local,12,,,,,180                ! Coord. system for upper layer: polar axis -Y
+csys,11                         ! Activate coord. system 11
+rect,0,L,-H,0                   ! Create area for lower layer
+rect,0,L, 0,H                   ! Create area for upper layer
+aglue,all                       ! Glue layers
+esize,H                         ! Specify the element length
+!
+et,1,PLANE223,1001,,0           ! 2-D piezoelectric element, plane stress
+
+tb,ANEL,1,,,1                  ! Elastic compliance matrix
+tbda,1,1/E1,-NU12/E1,-NU12/E1
+tbda,7,1/E1,-NU12/E1
+tbda,12,1/E1
+tbda,16,1/G12
+
+tb,PIEZ,1,,,1                   ! Piezoelectric strain matrix
+tbda,2,d31
+tbda,5,d33
+tbda,8,d32
+
+tb,DPER,1,,,1                   ! Permittivity at constant stress
+tbdata,1,ept33,ept33
+
+tblist,all                      ! List input and converted material matrices
+
+! -------------------------------------------------------------------------
+!          Alternative element type and material input
+!
+!et,1,PLANE13,7,,2               ! 2-D piezoelectric element, plane stress
+!
+!mp,EX,1,E1                      ! Elastic properties
+!mp,NUXY,1,NU12
+!mp,GXY,1,G12
+!
+!tb,PIEZ,1                       ! Piezoelectric stress matrix
+!tbda,2,0.2876e-1
+!tbda,5,-0.5186e-1
+!tbda,8,-0.7014e-3
+!
+!mp,PERX,1,11.75                 ! Permittivity at constant strain
+! -------------------------------------------------------------------------
+type,1 $ esys,11
+amesh,1                         ! Generate mesh within the lower layer
+type,1 $ esys,12             
+amesh,3                         ! Generate mesh within the upper layer
+!
+nsel,s,loc,x,L                  
+*get,ntip,node,0,num,min        ! Get master node at beam tip
+!
+nelec = 10                      ! Number of electrodes on top surface
+*dim,ntop,array,nelec
+l1 = 0                          ! Initialize electrode locations
+l2 = L/nelec           
+*do,i,1,nelec                   ! Define electrodes on top surface     
+nsel,s,loc,y,H                
+nsel,r,loc,x,l1,l2
+cp,i,volt,all
+*get,ntop(i),node,0,num,min     ! Get master node on top electrode
+l1 = l2 + H/10                  ! Update electrode location
+l2 = l2 + L/nelec
+*enddo
+nsel,s,loc,y,-H                 ! Define bottom electrode
+d,all,volt,0                    ! Ground bottom electrode
+nsel,s,loc,x,0                  ! Clamp left end of bimorph
+d,all,ux,0,,,,uy
+nsel,all
+fini
+/SOLU                           ! Actuator simulation
+antype,static                   ! Static analysis
+*do,i,1,nelec
+d,ntop(i),volt,V                ! Apply voltages to top electrodes
+*enddo
+solve
+Uy_an = -3*d31*V*L**2/(8*H**2)  ! Theoretical solution
+/com,
+/com, Actuator mode results:
+/com, - Calculated tip displacement Uy = %uy(ntip)% (m)
+/com, - Theoretical solution        Uy = %Uy_an% (m)
+fini
+/SOLU                           ! Sensor simulation
+antype,static,new
+*do,i,1,nelec
+ddele,ntop(i),volt              ! Delete applied voltages
+*enddo
+d,ntip,uy,Uy                    ! Apply displacement to beam tip
+nlgeom,on                       ! Activate large deflections
+nsubs,2                         ! Set number of substeps
+cnvtol,F,1.e-3,1.e-3            ! Set convergence for force
+cnvtol,CHRG,1.e-8,1.e-3         ! Set convergence for charge
+!cnvtol,AMPS,1.e-8,1.e-3         ! Use AMPS label with PLANE13
+solve
+fini
+/POST1
+/com,
+/com, Sensor mode results:
+*do,i,1,nelec
+/com, - Electrode %i%  Voltage = %volt(ntop(i))% (Volt)
+*enddo
+/com,
+/view,,3,,3                     ! Set viewing directions 
+/dscale,1,1                     ! Set scaling options
+pldisp,1                        ! Display deflected and undeflected shapes
+path,position,2,,100            ! Define path name and parameters
+ppath,1,,0,H                    ! Define path along bimorph length
+ppath,2,,L,H
+pdef,Volt,volt,,noav            ! Interpolate voltage onto the path
+pdef,Uy,u,y                     ! Interpolate displacement onto the path
+/axlab,x, Position (m)
+/axlab,y, Electrode Voltage (Volt)
+plpath,Volt                     ! Display electrode voltage along the path 
+/axlab,y, Beam Deflection (m)
+plpath,Uy                       ! Display beam deflection along the path
+pasave                          ! Save path in a file
+fini

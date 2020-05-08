@@ -1,0 +1,393 @@
+/clear
+! Permittivities
+ep11 = 730
+ep22 = 635
+ep33 = 730
+
+! Piezoelectric matrix values (C/m^2)  not IEEE
+e11 = 0          $e12 = -5.2          $e13 = 0
+e21 = 0          $e22 = 15.1          $e23 = 0
+e31 = 0          $e32 = -5.2          $e33 = 0
+e41 = 12.7      $e42 = 0              $e43 = 0
+e51 = 0          $e52 = 0              $e53 = 12.7
+e61 = 0          $e62 = 0              $e63 = 0
+
+! Elastic matrix values (N/m^2) not IEEE
+$d11=13.9e10
+$d21=7.43e10      $d22=11.5e10
+$d31=7.78e10      $d32=7.43e10    $d33=13.9e10
+$d41=0              $d42=0            $d43=0         $d44=2.56e10
+$d51=0              $d52=0            $d53=0         $d54=0      $d55=2.56e10
+$d61=0              $d62=0            $d63=0         $d64=0      $d65=0      $d66=3.06e10
+/prep7 
+local,11                        ! Coord. system for lower layer: polar axis +Y 
+local,12,,,,,180                ! Coord. system for upper layer: polar axis -Y
+csys,11                         ! Activate coord. system 11 
+
+!try not modif mat, but modif type
+/view,,0,0,1
+k,1,0,0,0   
+k,2,32,0,0  
+k,3,32,51
+k,4,18,70   
+k,5,0,70
+k,6,0,6 
+k,7,4.4,6
+k,8,4.4,10
+k,9,5,10  
+k,10,5,6  
+k,11,24,6 
+k,12,24,42 
+k,13,19+1,42
+k,14,19+1,21
+k,15,16,21
+k,16,4,21 
+k,17,4,61
+k,18,16,61
+k,19,25,51
+k,20,2.4,61
+k,21,2.4,10  
+k,22,3,10 
+k,23,3,21
+k,24,2.4,70 
+k,9001,19+1,10
+k,10001,19+1,6
+k,14001,24,21
+k,21001,0,10
+kgen,2,all,,,,-35,,,,1  
+kpscale,all,,,0.001,0.001,,,,1  
+/pnum,kp,1
+/pnum,area,1
+gplot
+a,10,10001,9001,9  
+a,22,9001,14,23  
+a,14,14001,12,13
+a,14,14001,11,10001
+a,16,15,18,17   
+a,3,4,24,20,18,19   
+a,5,21001,21,24 
+a,21001,6,7,8   
+a,1,2,3,4,5 
+PCIRC,0.5, ,-90,90, 
+aovlap,all  
+numcmp,area 
+numcmp,line 
+adele,11  
+adele,7
+k,102,32/50,-35/50,0  
+k,103,32/50,(51-35)/50
+k,104,18/50,(70-35)/50  
+l,2,102
+l,3,103
+l,4,104
+lsel,s,,,42,44
+asbl,10,all
+et,1,PLANE182,3,,1
+et,2,plane13,7,,1   
+et,3,fluid29,,,1
+et,4,fluid29,,1,1   
+et,5,fluid129,,,1   
+r,5,0.5,0,0 
+mp,ex,1,7.15e10 
+mp,prxy,1,0.34  
+mp,dens,1,2790  
+mp,ex,2,10.4e10 
+mp,prxy,2,0.37  
+mp,dens,2,8600  
+mp,ex,3,21.6e10 
+mp,prxy,3,0.28  
+mp,dens,3,7840  
+mp,dens,4,7500  
+mp,perx,4,ep11  
+mp,pery,4,ep22  
+mp,perz,4,ep33  
+tb,piez,4,,18,0 
+tbdata,1,e11,e12,e13,e21,e22,e23
+tbdata,7,e31,e32,e33,e41,e42,e43
+tbdata,13,e51,e52,e53,e61,e62,e63   
+tb,anel,4,,21,0 
+tbdata,1,d11,d21,d31,d41,d51,d61
+tbdata,7,d22,d32,d42,d52,d62,d33
+tbdata,13,d43,d53,d63,d44,d54,d64   
+tbdata,19,d55,d65,d66   
+mp,dens,5,7500  
+mp,perx,5,ep11  
+mp,pery,5,ep22  
+mp,perz,5,ep33  
+tb,piez,5,,18,0 
+tbdata,1,-e11,-e12,-e13,-e21,-e22,-e23  
+tbdata,7,-e31,-e32,-e33,-e41,-e42,-e43  
+tbdata,13,-e51,-e52,-e53,-e61,-e62,-e63 
+tb,anel,5,,21,0 
+tbdata,1,d11,d21,d31,d41,d51,d61
+tbdata,7,d22,d32,d42,d52,d62,d33
+tbdata,13,d43,d53,d63,d44,d54,d64   
+tbdata,19,d55,d65,d66   
+tblist,all  
+mp,dens,6,1000  
+mp,sonc,6,1500  
+mp,mu,6,0
+mp,dens,7,1000  
+mp,sonc,7,1500  
+mp,mu,7,1   
+/pnum,line,1
+/pnum,kp,1  
+asel,s,,,3  
+type,2  
+mat,4
+esys,11   
+lsla,s
+lsel,s,,,14,16,2 
+lesize,all,,,16
+lsel,s,,,13,15,2
+lesize,all,,,8
+amesh,3 
+
+asel,s,,,5  
+lsla,s  
+type,1  
+mat,3   
+lesize,30,0.0015
+lesize,32,0.0015
+lesize,22,,,3
+AMAP,5,21001,5,24,21
+
+asel,s,,,8
+lsla,s
+type,1  
+mat,1   
+lesize,36,,,2
+lesize,20,,,12
+AMAP,8,24,3,19,20
+
+asel,s,,,1  
+lsla,s  
+type,1  
+mat,2  
+lesize,all,0.0015
+amesh,1 
+asel,s,,,9
+lsla,s
+lesize,35,,,2
+lesize,37,,,1
+lesize,38,0.0015
+lesize,5,0.0025
+AMAP,9,14,23,22,9001
+asel,s,,,4
+lsla,s
+lesize,7,,,3
+AMAP,4,14,14001,11,10001
+asel,s,,,2
+lsla,s
+lesize,10,0.0025
+AMAP,2,14,14001,12,13
+
+asel,s,,,6  
+lsla,s  
+type,1  
+mat,3   
+lesize,34,,,1
+lesize,24,0.0015
+AMAP,6,21001,8,7,6
+
+asel,s,,,13
+lsla,s  
+type,3  
+mat,6 
+lesize,46,0.0025
+AMAP,13,4,29,26,5
+asel,s,,,7
+AMAP,7,3,28,29,4
+asel,s,,,12
+lsla,s  
+lesize,28,0.0025
+AMAP,12,2,30,28,3
+asel,s,,,11
+lsla,s
+lesize,27,0.0025
+AMAP,11,1,2,30,25
+
+/pnum,line,0
+/pnum,kp,0  
+esel,s,type,,2
+nsle,s
+nsel,r,loc,y,-14/1000+0.005,-14/1000+0.010
+nsel,a,loc,y,-14/1000+0.015,-14/1000+0.020
+*repeat,3,,,,0.01,0.01
+nsel,r,loc,x,0.004,0.016
+esln,s,1
+nsle,s 
+!emodif,all,mat,5
+emodif,all,esys,12
+
+esel,s,type,,1,2
+nsle,s
+esln,s
+esel,inve
+nsle,s 
+emodif,all,type,4
+nsel,s,loc,x,0.032
+nsel,r,loc,y,-0.035,(51-35)/1000-0.001
+nsel,a,loc,y,-0.035
+nsel,r,loc,x,0,0.032
+esln,s
+nsle,s 
+emodif,all,type,3
+alls
+csys,1
+nsel,s,loc,x,0.5
+type,5
+real,5
+mat,7
+esurf
+csys
+
+lsel,s,,,18,23,5
+lsel,a,,,17
+nsll,s,1
+esln,s
+sf,all,fsi
+ECPCHG
+
+nsel,s,loc,x,0.032
+nsel,r,loc,y,-0.035,(51-35)/1000-0.001
+d,all,ux,0
+nsel,s,loc,y,-0.035
+nsel,r,loc,x,0,0.032
+d,all,uy,0
+
+nsel,s,loc,y,-14/1000
+nsel,a,loc,y,-14/1000
+*repeat,5,,,,0.010,
+nsel,r,loc,x,0.004,0.016
+cp,1,volt,all
+vgrd=ndnext(0) 
+d,vgrd,volt,0
+
+nsel,s,loc,y,-14/1000+0.005
+nsel,a,loc,y,-14/1000+0.005
+*repeat,4,,,,0.01,
+nsel,r,loc,x,0.004,0.016
+cp,2,volt,all
+velc=ndnext(0) 
+d,velc,volt,1
+alls
+gplot
+nsel,s,loc,x,0 
+d,all,ux,0
+alls
+!!!!  to create cavity
+! nsel,s,loc,y,29e-3,33e-3
+! nsel,r,loc,x,0,10e-3
+! esln,s,1
+! et,100,mesh200,6
+! type,100
+! emodif,all,type,100
+!!!!! end
+
+!!!!to couple the top freedom
+! nsel,s,loc,y,35e-3
+! nsel,r,loc,x,2.4e-3,18e-3
+! cp,3,uy,all
+
+!!!!!more
+! nsel,s,loc,y,35e-3
+! nsel,r,loc,x,18e-3
+! nsel,s,loc,x,0.032
+! nsel,r,loc,y,(51-35)/1000
+! d,all,ux,0
+
+alls
+/solu
+antype,harm                    ! harmonic analysis
+hropt,full
+harfrq,10000,25000                   ! frequency range
+nsubs,200                     ! number of substeps
+DMPstr,0.042
+! DMPrat,0.042
+outres,all,all                 ! write all solution items to the result file
+kbc,1                          ! stepped load
+solve
+fini
+/post26
+numvar,200
+nsel,s,loc,y,0,0.35
+nsel,r,loc,x,0
+*get,nodemax,node,,num,max
+*get,ra,node,nodemax,loc,y
+NSOL,2,nodemax,PRES,, PRES_2, 
+STORE,MERGE 
+! Name: SVL
+! ID:  4
+! Function: 20*real(log({PRES_2}*{RA}/100))+120 
+FILLDATA,199,,,,RA,0
+REALVAR,199,199 
+PROD,200,2,199  
+CLOG,199,200
+REALVAR,200,199 
+FILLDATA,198,,,,20,0
+REALVAR,198,198 
+PROD,199,198,200
+FILLDATA,198,,,,120,0   
+REALVAR,198,198 
+ADD,4,199,198,,SVL
+/axlab,x, Frequence (KHz)   
+/axlab,y, SVL (dB)  
+/title,Transmitting Voltage Respond 
+prod,5,1,,,kfreq,,,0.001
+plcplx,0
+xvar,5  
+/xrange,10,25
+plvar,svl   
+
+*SET,pi,acos(-1)
+rfor,6,velc,amps             ! reaction current I   
+prod,7,6,1,,Y,,,2*Pi,1/1          ! 2*Pi*f/V0   
+REALVAR,8,7,,,G,,,-1000
+imagin,9,7,,,B,,,1000
+/axlab,x, Frequence (KHz)   
+/axlab,y,G & B of admitance [mS]
+/title,Admittance Curve
+xvar,5 
+/xrange,10,25
+plvar,G,B
+
+/axlab,x,G [mS]
+/axlab,y,B [mS]
+/title,Admittance Circle Diagram
+!*get,Gmx,vari,8,extrem,Vmax
+
+/xrange,0,3
+xvar,8
+plvar,B
+
+/post1
+set,1,60,1,1
+PLNSOL,PRES
+set,1,133,1,3
+PLNSOL,PRES
+
+
+/dscale,1,1
+! set,1,60,1,3
+! csys,1
+! FLST,2,2,1  
+! FITEM,2,9547
+! FITEM,2,819 
+*  
+! PATH,position,2,30,50,
+! PPATH,P51X,1
+*  
+! PMAP,'UNI ','    '  
+! /PBC,PATH,1 
+! /REPLOT 
+! /PBC,PATH,0 
+
+
+! pdef,press,pres,,noav           ! Interpolate voltage onto the path
+! PCALC,
+! /axlab,x, radial (m)
+! /axlab,y, SVL (dB)
+! /xrange,0,1.2
+! plpath,press                     ! Display electrode voltage along the path 
+! pasave

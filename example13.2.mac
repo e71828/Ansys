@@ -1,0 +1,144 @@
+!This example problem demonstrates the use of FLUID220 to predict the sloshing modes of a cylindrical cavity.
+
+!The inner and outer radius of the cavity are 0.1 m and 0.2 m, respectively.
+
+!The height of the cavity is 0.2 m, including a cylindrical steel solid with the height 0.1 m at the bottom.
+
+!The bottom surface of the cavity is constrained.
+
+!The free surface is defined at the top of the water.
+
+/clear
+/batch,list
+/title,Modal Analysis of Free Surface Effects 
+/nopr
+/prep7
+                            ! create geometry
+r1=0.1                      ! inner radius
+r2=0.2                      ! outer radius
+h=0.1                       ! height
+nr=5
+ntheta=30
+nz=5
+local,11,,,,,,,90           ! local coordinate
+wpcsys,,11
+cyl4,0,0,r1,,r2,,h
+wpro,,90.
+vsbw,all
+wpro,,,90.
+vsbw,all
+local,12,1,,,,,,90
+csys,12
+lsel,all
+lsel,u,loc,x,r1
+lsel,u,loc,x,r2
+lesize,all,,,nr
+lsel,s,loc,x,r1
+lsel,u,loc,z,h
+lsel,u,loc,z,0.0
+lesize,all,,,nz
+lsel,s,loc,x,r2
+lsel,u,loc,z,h
+lsel,u,loc,z,0.0
+lesize,all,,,nz
+lsel,s,loc,x,r1
+lsel,r,loc,z,h
+lesize,all,,,ntheta
+lsel,s,loc,x,r2
+lsel,r,loc,z,h
+lesize,all,,,ntheta
+lsel,s,loc,x,r1
+lsel,r,loc,z,0.0
+lesize,all,,,ntheta
+lsel,s,loc,x,r2
+lsel,r,loc,z,0.0
+lesize,all,,,ntheta
+csys,11
+alls
+mshkey,1
+                             ! define elements
+et,1,220,,0                  ! coupled acoustic element
+mp,sonc,1,1500.              ! sound speed
+mp,dens,1,1000.              ! mass density
+et,2,186,                    ! structural element
+mp,ex,2,1.44e11
+mp,dens,2,7700
+mp,nuxy,2,0.35
+                             ! create mesh
+type,1
+mat,1
+vsweep,all
+alls
+type,2
+mat,2
+vsymm,z,all
+alls
+nummrg,all            !粘接单元，不共享，但同位置只保留一个
+vsel,s,loc,z,0,-h
+eslv,s,
+emodif,all,,2
+alls
+                             ! flag free surface
+nsel,s,loc,z,h
+sf,all,free
+                             ! define constrains
+nsel,s,loc,z,-h
+d,all,uz,0
+d,all,ux,0
+d,all,uy,0
+                             ! flag fsi interface 
+nsel,s,loc,z,0
+sf,all,fsi
+alls
+csys,0
+acel,9.81,0,0                ! gravity acceleration
+fini
+                             ! perform a solution
+/solu
+antype,modal
+modopt,damp,20,0.05
+mxpand,20
+solve
+fini
+                             ! post-processing
+/post1
+set,list
+/com,analytical eigenfrequencies are listed below
+/com,f1 = 0.996
+/com,f2 = 1.704
+/com,f3 = 2.176
+/com,f4 = 2.521
+/com,f5 = 2.814
+/com,f6 = 2.852
+/com,f7 = 2.960
+/com,f8 = 3.120
+/com,f9 = 3.313
+/com,
+fini
+
+
+  ***** FREQUENCIES FROM DAMPED EIGENSOLVER *****
+
+               COMPLEX FREQUENCY (HERTZ)
+  MODE     STABILITY            FREQUENCY         MODAL DAMPING RATIO
+   FREQUENCY RANGE REQUESTED=  0.500000E-01  0.100000E+07
+    1       0.0000000          0.99633192    j       0.0000000
+    2       0.0000000         -0.99633192    j       0.0000000
+    3       0.0000000          0.99633192    j       0.0000000
+    4       0.0000000         -0.99633192    j       0.0000000
+    5       0.0000000           1.7041950    j       0.0000000
+    6       0.0000000          -1.7041950    j       0.0000000
+    7       0.0000000           1.7041950    j       0.0000000
+    8       0.0000000          -1.7041950    j       0.0000000
+    9       0.0000000           2.1755595    j       0.0000000
+   10       0.0000000          -2.1755595    j       0.0000000
+   11       0.0000000           2.1755595    j       0.0000000
+   12       0.0000000          -2.1755595    j       0.0000000
+   13       0.0000000           2.5215148    j       0.0000000
+   14       0.0000000          -2.5215148    j       0.0000000
+   15       0.0000000           2.5215148    j       0.0000000
+   16       0.0000000          -2.5215148    j       0.0000000
+   17       0.0000000           2.8015989    j       0.0000000
+   18       0.0000000          -2.8015989    j       0.0000000
+   19       0.0000000           2.8016102    j       0.0000000
+   20       0.0000000          -2.8016102    j       0.0000000
