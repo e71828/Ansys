@@ -1,0 +1,167 @@
+/CLEAR
+/prep7
+et,10,181,,,2       !top layer
+et,11,181,,,2        !bottom layer
+mp,ex,10,70.3e9/2     !material properties
+mp,prxy,10,0.35
+mp,dens,10,2700/2
+sectype,,shell        !section for thin panel
+secdata,0.003376       !thickness
+
+! Upstream 3-D ACOUSTIC FLUID elements
+! without Fluid Structure interface
+ET,1,FLUID30,,1
+! Upstream 3-D ACOUSTIC FLUID elements
+! with Fluid Structure interface
+ET,2,FLUID30
+! Downstream 3-D ACOUSTIC FLUID elements
+! without Fluid Structure interface
+ET,3,FLUID30,,1
+! Downstream 3-D ACOUSTIC FLUID elements
+! with Fluid Structure interface
+ET,4,FLUID30
+!material properties for typical air
+R,1,20e-6 !reference pressure (defaults to 20e-6)
+densair = 1.21
+MP,DENS,1,densair !air density
+MP,SONC,1,344 !sound speed in air
+!Material for air with absorptive ends
+R,3,20e-6 !reference pressure (defaults to 20e-6)
+MP,DENS,3,densair !air density
+MP,SONC,3,344 !sound speed in air
+MP,MU,3,1 !sound absorption
+
+
+N,1
+N,6,0.5
+FILL
+NGEN,6,6,1,6,1,,0.1
+TYPE,10
+mat,10
+/PNUM,NODES,1
+*DO,J,0,24,6
+*DO,I,1,5
+E,I+J,I+J+1,I+J+7,I+J+6
+*ENDDO
+*ENDDO
+NGEN,2,50,1,36,1
+EGEN,2,50,1,25,1,,1
+
+type,2
+mat,1
+NGEN,101,100,1,36,1,,,0.05
+u = 100
+*do,k,0,9900,100
+*do,j,0,24,6
+*do,i,1,5
+z = i+j+k
+e,z,z+1,z+7,z+6,z+u,z+u+1,z+u+7,z+u+6
+*enddo
+*enddo
+*enddo
+type,4
+NGEN,101,100,51,86,1,,,-0.05
+u = 100
+*do,k,0,9900,100
+*do,j,0,24,6
+*do,i,1,5
+z = i+j+k+50
+e,z,z+1,z+7,z+6,z+u,z+u+1,z+u+7,z+u+6
+*enddo
+*enddo
+*enddo
+
+nsel,s,loc,x,0.1,0.4
+nsel,r,loc,y,0.1,0.4
+nsel,r,loc,z,0.5,5
+esln,s,1
+emodif,all,type,1
+nsel,s,loc,x,0.1,0.4
+nsel,r,loc,y,0.1,0.4
+nsel,r,loc,z,-5,-0.5
+esln,s,1
+emodif,all,type,3
+esel,s,type,,10 !select the upstream structure
+nelem !select the nodes attached to elements
+esel,s,type,,2 !select the fsi elements
+sf,all,fsi
+esel,s,type,,11 !select the downstream structure
+nelem !select the nodes attached to elements
+esel,s,type,,4 !select the fsi elements
+sf,all,fsi
+alls
+
+!put in absorptive (anechoic) ends
+nsel,s,loc,z,5
+nsel,a,loc,z,-5
+esln,s,0
+emodif,all,mat,3
+emodif,all,real,3
+nsel,s,loc,z,5
+nsel,a,loc,z,-5
+esln,s
+sf,all,impd,1
+alls
+
+esel,s,type,,1 !upstream acoustic fluid
+esel,a,type,,3 !downstream acoustic fluid
+nsle,s
+d,all,ux
+d,all,uy
+d,all,uz
+
+esel,s,type,,10,11
+nsle,s
+CPINTF,UX,0.0001,
+CPINTF,UY,0.0001,
+CPINTF,UZ,0.0001,
+CPINTF,ROTX,0.0001,
+CPINTF,ROTY,0.0001,
+CPINTF,ROTZ,0.0001,
+alls
+! apply a pressure loading of 1Pa
+nsel,s,loc,z,2
+d,all,pres,1
+alls
+/PNUM,NODE,0
+/VIEW,1,1,2,3
+/REP
+alls
+
+/SOL
+ANTYPE,harm
+HROPT,FULL         
+HARFRQ,50,350
+NSUBST,6
+KBC,1      ! STEP BOUNDARY CONDITIONS
+dmpstr,1e-4
+SOLVE
+
+/post1
+esel,s,type,,1,4
+set,1,1,,ampl
+plnsol,spl
+
+/post26
+nsel,s,loc,z,-0.05
+nsel,r,loc,x,0.2,0.4
+nsel,r,loc,Y,0.2,0.4
+*get,nodemax,node,,num,max
+NSOL,2,nodemax,PRES,, PRES_2
+! Name: TL  
+! ID:  4
+! Function: 90.97-20*log({PRES_2}/(20E-6))  
+FILLDATA,199,,,,20E-6,0 
+REALVAR,199,199 
+QUOT,200,2,199  
+CLOG,199,200
+FILLDATA,198,,,,-20,0
+REALVAR,198,198 
+PROD,200,198,199
+FILLDATA,198,,,,90.97,0 
+REALVAR,198,198 
+PROD,197,200,194
+ADD,4,198,197,,TL
+/YRANGE,0,40
+PLVAR,TL
+/REPLOT
