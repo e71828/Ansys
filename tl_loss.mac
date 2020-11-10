@@ -82,11 +82,11 @@ nsel,r,loc,z,-5,-0.5
 esln,s,1
 emodif,all,type,3
 esel,s,type,,10 !select the upstream structure
-nelem !select the nodes attached to elements
+nsle,s !select the nodes attached to elements
 esel,s,type,,2 !select the fsi elements
 sf,all,fsi
 esel,s,type,,11 !select the downstream structure
-nelem !select the nodes attached to elements
+nsle,s !select the nodes attached to elements
 esel,s,type,,4 !select the fsi elements
 sf,all,fsi
 alls
